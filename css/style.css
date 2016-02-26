@@ -1,0 +1,15 @@
+body {
+	font-family: Monospace;
+	background-color: #f0f0f0;
+	margin: 0px;
+	overflow: hidden;
+}
+
+canvas {
+	border: 0px solid #ffffff;
+}
+
+#mask {
+	background-color: rgba(69, 69, 69, 0.1);
+	position: absolute;
+}
