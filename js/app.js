@@ -25,21 +25,35 @@
             var len = windowWidth/3;
             ctx.canvas.width = windowWidth;
             ctx.canvas.height = windowWidth;
+            var mask = document.getElementById("mask");
 
-            document.getElementById("mask").style.height = (len - borderWidth)+"px";
-            document.getElementById("mask").style.width = (len - borderWidth)+"px";
+            mask.style.height = (len - borderWidth)+"px";
+            mask.style.width = (len - borderWidth)+"px";
 
-            function addMask(event){
-                var x = event.layerX;
-                var y = event.layerY;
+            function addMask(e){
+                if(e.preventDefault) e.preventDefault();
+                var x = e.layerX;
+                var y = e.layerY;
 
                 var i = Math.floor(x / len);
                 var j = Math.floor(y / len);
                 //System.out.println(i+" "+j);
-                document.getElementById("mask").style.top = (j * len + borderWidth)+"px";
-                document.getElementById("mask").style.left = (i * len + borderWidth)+"px";
+                mask.style.top = (j * len + borderWidth)+"px";
+                mask.style.left = (i * len + borderWidth)+"px";
+            }
+            function hideMask(e) {
+                if (e.relatedTarget != canvas || e.toElement != canvas){
+                    mask.style.display="none";
+                }
+            }
+            function showMask(e) {
+                if (e.relatedTarget != mask || e.fromElement != mask){
+                    mask.style.display="block";
+                }
             }
             canvas.addEventListener('mousemove', addMask);
+            canvas.addEventListener('mouseenter', showMask);
+            mask.addEventListener('mouseleave', hideMask);
         }
         Puzzle.draw = function() {
             ctx.fillStyle = "rgba(0, 0, 200, 0.5)";

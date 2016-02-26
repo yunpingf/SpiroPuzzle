@@ -12,4 +12,5 @@ canvas {
 #mask {
 	background-color: rgba(69, 69, 69, 0.1);
 	position: absolute;
+	display: none;
 }
