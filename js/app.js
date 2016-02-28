@@ -13,13 +13,15 @@
         var imageArray = [];
         var indexArray = [0, 1, 2, 3, 4, 5, 6, 7, 8];
         var indexCache = [];
-        var slices = 4;
+        var slices = 3;
         var len = windowWidth/slices;
         var colorIndex = 2;//generateRandom(0, colorSchemes.length-1);
         var infoArray = {};
+        var started = false;
         var steps = 0;
         var intervalId = 0;
         var drawIntervalId = 0;
+        var previousImageData;
         var seconds = 0, minutes = 0, hours = 0;
 
         function swap(array, i, j){
@@ -111,7 +113,6 @@
             var minute = document.getElementById("minute");
             var second = document.getElementById("second");
             function start(){
-                console.log("!!!");
                 intervalId = window.setInterval(function(){
                     seconds ++;
                     if (seconds == 60){
@@ -224,11 +225,36 @@
                     drawHypocycloids(ctx, x, y, R, r, a, color);
                 }
             }
+            function clearCanvas(ctx, imageData) {
+                ctx.fillStyle = colorSchemes[colorIndex][0];
+                ctx.fillRect (0, 0, windowWidth, windowWidth);
+                ctx.putImageData(imageData, 0, 0);
+                drawHeart(ctx);
+                Puzzle.drawGrid();
+
+                previousImageData = ctx.getImageData(0, 0, windowWidth, windowWidth);
+                var newImageArray = [];
+                for (var i = 0; i < slices; ++i) {
+                    for (var j = 0; j < slices; ++j) {
+                        var imgData=ctx.getImageData(j*len,i*len,len,len);
+                        newImageArray.push(imgData);
+                    }
+                }
+                for(var i = 0; i < slices*slices; ++i) {
+                    var x = Math.floor(i/slices), y = i - x*slices;
+                    imageArray[i] = newImageArray[indexArray[i]];
+                    ctx.putImageData(imageArray[i], y*len, x*len);
+                }
+                
+                clearInterval(drawIntervalId);
+            }
             /*basicShapes.push(drawSquare);
             basicShapes.push(drawCircle);
             basicShapes.push(drawHeart);
             basicShapes[2](ctx);*/
             drawSpiro(ctx);
+            previousImageData = ctx.getImageData(0, 0, windowWidth, windowWidth);
+            drawIntervalId = window.setInterval(clearCanvas, 10000, ctx, previousImageData);
         }
         Puzzle.drawGrid = function() {
             ctx.strokeStyle = colorSchemes[colorIndex][colorSchemes[colorIndex].length - 1];
@@ -261,7 +287,7 @@
                 }
             }
 
-            for (var k = 0; k < 0; ++k) {
+            for (var k = 0; k < 30; ++k) {
                 var i = generateRandom(0, slices*slices-1);
                 var j = generateRandom(0, slices*slices-1);
                 var x1 = Math.floor(i/slices), y1 = i - x1*slices;
