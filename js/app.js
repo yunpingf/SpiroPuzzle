@@ -4,17 +4,23 @@
         var Puzzle = {};
         var canvas = document.getElementById('canvas');
         var ctx = canvas.getContext('2d');
-        var colorSchemes = [['#C7D8C6','#EFD9C1','#A9B7C0'], ['#494E6B','#985E6D','#99878F']];
-        var borderWidth = 2;
+        var colorSchemes = [['#494E6B', '#DF744A','#FEDCD2','#BFD8D2','#DCB239','#f4f4f4'],
+        ['#494E6B', '#6B7A8F','#F7882F','#F7C331','#DCC7AA','#f4f4f4'],
+        ['#22252C', '#D7DD35','#575DA9','#E42D9F','#02558B','#f4f4f4']];
+        var borderWidth = 1;
         var windowWidth = window.innerWidth;
         var windowHeight = window.innerHeight;
         var imageArray = [];
         var indexArray = [0, 1, 2, 3, 4, 5, 6, 7, 8];
         var indexCache = [];
-        var slices = 3;
+        var slices = 4;
         var len = windowWidth/slices;
-        var colorIndex = 1;//generateRandom(0, colorSchemes.length-1);
+        var colorIndex = 2;//generateRandom(0, colorSchemes.length-1);
         var infoArray = {};
+        var steps = 0;
+        var intervalId = 0;
+        var drawIntervalId = 0;
+        var seconds = 0, minutes = 0, hours = 0;
 
         function swap(array, i, j){
             var tmp = array[i];
@@ -74,7 +80,6 @@
                 var y = e.clientY;
                 var i = Math.floor(y / len);
                 var j = Math.floor(x / len);
-
                 if (indexCache.length == 0){
                     indexCache.push({'i':i, 'j':j});
                     chosen.style.top = (i * len + borderWidth)+"px";
@@ -82,20 +87,69 @@
                     chosen.style.display = "block";
                 }
                 else if (indexCache.length == 1) {
-                    indexCache.push({'i':i, 'j':j});
-                    swapImage(imageArray, indexCache[0], indexCache[1]);
+                    if (!(i == indexCache[0].i && j == indexCache[0].j)){
+                        indexCache.push({'i':i, 'j':j});
+                        swapImage(imageArray, indexCache[0], indexCache[1]);
+                        steps ++;
+                        console.log(steps);
+                    }
                     indexCache = [];
                     chosen.style.display = "none";
                 }
 
                 if (Puzzle.isFinished()){
-
+                    steps = 0;
                 }
             }
             canvas.addEventListener('mousemove', addMask);
             canvas.addEventListener('mouseenter', showMask);
             mask.addEventListener('mouseleave', hideMask);
             mask.addEventListener('click', click);
+            chosen.addEventListener('click', click);
+
+            var hour = document.getElementById("hour");
+            var minute = document.getElementById("minute");
+            var second = document.getElementById("second");
+            function start(){
+                console.log("!!!");
+                intervalId = window.setInterval(function(){
+                    seconds ++;
+                    if (seconds == 60){
+                        minutes ++;
+                        seconds = 0;
+                    }
+                    if (minutes == 60){
+                        hours ++;
+                        minutes = 0;
+                    }
+                    function toValidForm(num){
+                        if (num.toString().length == 1)
+                            num = "0"+num;
+                        return num;
+                    }
+                    hour.innerHTML = toValidForm(hours);
+                    minute.innerHTML = toValidForm(minutes);
+                    second.innerHTML = toValidForm(seconds);
+                }, 1000);
+            }
+            function reset() {
+                clearInterval(intervalId);
+                steps = 0;
+                seconds = 0;
+                minutes = 0;
+                hours = 0;
+            }
+            function pause(){
+                clearInterval(intervalId);
+            }
+            var startButton = document.getElementById("start");
+            var resetButton = document.getElementById("reset");
+            var pauseButton = document.getElementById("pause");
+            var time = document.getElementById("time");
+
+            startButton.addEventListener('click', start);
+            resetButton.addEventListener('click', reset);
+            pauseButton.addEventListener('click', pause);
         }
         Puzzle.draw = function() {
             var basicShapes = [];
@@ -125,41 +179,19 @@
                 ctx.bezierCurveTo(17*w/30,w/6,w/2,37*w/150,w/2,4*w/15);
                 ctx.fill();
             }
-            function drawHypocycloids(ctx, x, y, R, r, a) {
+            function drawHypocycloids(ctx, x, y, R, r, a, color) {
                 var w = windowWidth;
                 ctx.save();
                 ctx.translate(x, y);
-                ctx.strokeStyle = colorSchemes[colorIndex][1];
-                
+                ctx.strokeStyle = color;
                 ctx.beginPath();
                 ctx.moveTo(R-r+a,0);
-                for (var i = 0; i < 20000; ++i) {
-                    var t = (Math.PI / 180) * i;
+                for (var i = 0; i < 10000; ++i) {
+                    var t = (Math.PI / 150) * i;
                     var x = (R-r)*Math.cos(r*t/R) + a*Math.cos((1-r/R)*t);
                     var y = (R-r)*Math.sin(r*t/R) - a*Math.sin((1-r/R)*t);
                     ctx.lineTo(x,y);
-                }
-                ctx.stroke();
-                ctx.closePath();
-
-                ctx.restore();
-            }
-            function drawEpicycloids(ctx) {
-                var w = windowWidth;
-                ctx.save();
-                ctx.translate(w/2, w/2);
-                var R = 200;
-                var r = -70;
-                var a = 20;
-                ctx.strokeStyle = colorSchemes[colorIndex][1];
-                ctx.beginPath();
-                ctx.moveTo(R,0);
-                for (var i = 0; i < 20000; ++i) {
-                    var t = (Math.PI / 180) * i;
-                    var x = (R+r)*Math.cos(r*t/R) - a*Math.cos((1+r/R)*t);
-                    var y = (R+r)*Math.sin(r*t/R) - a*Math.sin((1+r/R)*t);
-                    ctx.lineTo(x,y);
-
+                    //break;
                 }
                 ctx.stroke();
                 ctx.closePath();
@@ -168,18 +200,29 @@
             }
             var drawSpiro = function(ctx) {
                 var w = windowWidth;
-                var pos = [{'x':w/2, 'y':w/2}, {'x':w/3, 'y':w/3}];
+                var delta = generateRandom(-w*0.01, w*0.01);
+                var pos = [{'x':w/4,'y':w/4},
+                {'x':w*3/4, 'y':w/4}, 
+                {'x':w/4, 'y':w*3/4},
+                {'x':w*3/4, 'y':w*3/4}];
                 
-                for (var i = 0; i < pos.length; ++i) {
-                    var x = pos[i].x;
-                    var y = pos[i].y;
-                    var R = x;
-                    var r = generateRandom(40, (R * 0.75));
-                    var a = generateRandom(35, r);
-                    drawHypocycloids(ctx, x, y, R, r, a);
+                for (var i = 0; i < 5; ++i){
+                    var j = generateRandom(1, 4);
+                    var k = generateRandom(1, 4);
+                    swap(colorSchemes[colorIndex],j, k);
                 }
-                
-                //drawEpicycloids(ctx);
+
+                for (var i = 0; i < pos.length; ++i) {
+                    delta = generateRandom(-w*0.02, w*0.02);
+                    var x = pos[i].x+ delta;
+                    var y = pos[i].y+ delta;
+                    var R = 0.5*w + delta*10;
+                    //var R = w/2;
+                    var r = generateRandom(R*0.6, R*0.8);
+                    var a = generateRandom(0.3*r, 0.5*r);
+                    var color = colorSchemes[colorIndex][i+1];
+                    drawHypocycloids(ctx, x, y, R, r, a, color);
+                }
             }
             /*basicShapes.push(drawSquare);
             basicShapes.push(drawCircle);
@@ -188,7 +231,7 @@
             drawSpiro(ctx);
         }
         Puzzle.drawGrid = function() {
-            ctx.strokeStyle = colorSchemes[colorIndex][2];
+            ctx.strokeStyle = colorSchemes[colorIndex][colorSchemes[colorIndex].length - 1];
             ctx.lineWidth=2*borderWidth;
             ctx.strokeRect(0, 0, windowWidth, windowWidth);
             

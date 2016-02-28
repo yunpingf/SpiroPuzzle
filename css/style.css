@@ -8,6 +8,15 @@ canvas {
 	border: 0px solid #ffffff;
 }
 
+span#time {
+	color: white;
+	font-size: 16px;
+}
+
+button {
+	
+}
+
 .mask {
 	background-color: rgba(255, 255, 255, 0.2);
 	position: absolute;
