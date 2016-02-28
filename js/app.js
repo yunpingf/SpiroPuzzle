@@ -23,6 +23,13 @@
         var drawIntervalId = 0;
         var previousImageData;
         var seconds = 0, minutes = 0, hours = 0;
+        var w = windowWidth;
+        var pos = [{'x':w/4,'y':w/4},
+                {'x':w*3/4, 'y':w/4}, 
+                {'x':w/4, 'y':w*3/4},
+                {'x':w*3/4, 'y':w*3/4}];
+        var posIndex = 0;
+
 
         function swap(array, i, j){
             var tmp = array[i];
@@ -153,6 +160,12 @@
             pauseButton.addEventListener('click', pause);
         }
         Puzzle.draw = function() {
+            for (var i = 0; i < 5; ++i){
+                var j = generateRandom(1, 4);
+                var k = generateRandom(1, 4);
+                swap(colorSchemes[colorIndex],j, k);
+            }
+
             var basicShapes = [];
             var basicLines = [];
             var complexLines = [];
@@ -180,6 +193,17 @@
                 ctx.bezierCurveTo(17*w/30,w/6,w/2,37*w/150,w/2,4*w/15);
                 ctx.fill();
             }
+            
+            /*basicShapes.push(drawSquare);
+            basicShapes.push(drawCircle);
+            basicShapes.push(drawHeart);
+            basicShapes[2](ctx);*/
+            //drawSpiro(ctx);
+            //drawHeart(ctx);
+            //previousImageData = ctx.getImageData(0, 0, windowWidth, windowWidth);
+            drawIntervalId = window.setInterval(Puzzle.clearCanvas, 2000);
+        }
+        Puzzle.drawSpiro = function(){
             function drawHypocycloids(ctx, x, y, R, r, a, color) {
                 var w = windowWidth;
                 ctx.save();
@@ -192,75 +216,25 @@
                     var x = (R-r)*Math.cos(r*t/R) + a*Math.cos((1-r/R)*t);
                     var y = (R-r)*Math.sin(r*t/R) - a*Math.sin((1-r/R)*t);
                     ctx.lineTo(x,y);
-                    //break;
                 }
                 ctx.stroke();
                 ctx.closePath();
-
                 ctx.restore();
             }
-            var drawSpiro = function(ctx) {
-                var w = windowWidth;
-                var delta = generateRandom(-w*0.01, w*0.01);
-                var pos = [{'x':w/4,'y':w/4},
-                {'x':w*3/4, 'y':w/4}, 
-                {'x':w/4, 'y':w*3/4},
-                {'x':w*3/4, 'y':w*3/4}];
-                
-                for (var i = 0; i < 5; ++i){
-                    var j = generateRandom(1, 4);
-                    var k = generateRandom(1, 4);
-                    swap(colorSchemes[colorIndex],j, k);
-                }
 
-                for (var i = 0; i < pos.length; ++i) {
-                    delta = generateRandom(-w*0.02, w*0.02);
-                    var x = pos[i].x+ delta;
-                    var y = pos[i].y+ delta;
-                    var R = 0.5*w + delta*10;
-                    //var R = w/2;
-                    var r = generateRandom(R*0.6, R*0.8);
-                    var a = generateRandom(0.3*r, 0.5*r);
-                    var color = colorSchemes[colorIndex][i+1];
-                    drawHypocycloids(ctx, x, y, R, r, a, color);
-                }
-            }
-            function clearCanvas(ctx, imageData) {
-                ctx.fillStyle = colorSchemes[colorIndex][0];
-                ctx.fillRect (0, 0, windowWidth, windowWidth);
-                ctx.putImageData(imageData, 0, 0);
-                drawHeart(ctx);
-                Puzzle.drawGrid();
-
-                previousImageData = ctx.getImageData(0, 0, windowWidth, windowWidth);
-                var newImageArray = [];
-                for (var i = 0; i < slices; ++i) {
-                    for (var j = 0; j < slices; ++j) {
-                        var imgData=ctx.getImageData(j*len,i*len,len,len);
-                        newImageArray.push(imgData);
-                    }
-                }
-                for(var i = 0; i < slices*slices; ++i) {
-                    var x = Math.floor(i/slices), y = i - x*slices;
-                    imageArray[i] = newImageArray[indexArray[i]];
-                    ctx.putImageData(imageArray[i], y*len, x*len);
-                }
-                
-                clearInterval(drawIntervalId);
-            }
-            /*basicShapes.push(drawSquare);
-            basicShapes.push(drawCircle);
-            basicShapes.push(drawHeart);
-            basicShapes[2](ctx);*/
-            drawSpiro(ctx);
-            previousImageData = ctx.getImageData(0, 0, windowWidth, windowWidth);
-            drawIntervalId = window.setInterval(clearCanvas, 10000, ctx, previousImageData);
+            var delta = generateRandom(-w*0.02, w*0.02);
+            var x = pos[posIndex].x+ delta;
+            var y = pos[posIndex].y+ delta;
+            var R = 0.5*w + delta*10;
+            var r = generateRandom(R*0.6, R*0.8);
+            var a = generateRandom(0.3*r, 0.5*r);
+            var color = colorSchemes[colorIndex][posIndex+1];
+            drawHypocycloids(ctx, x, y, R, r, a, color);
         }
         Puzzle.drawGrid = function() {
             ctx.strokeStyle = colorSchemes[colorIndex][colorSchemes[colorIndex].length - 1];
             ctx.lineWidth=2*borderWidth;
             ctx.strokeRect(0, 0, windowWidth, windowWidth);
-            
             ctx.lineWidth=borderWidth;
             for (var i = 1; i < slices; ++i) {
                 ctx.beginPath();
@@ -279,6 +253,31 @@
             }
             
         }
+        Puzzle.clearCanvas = function(){
+            previousImageData = ctx.getImageData(0, 0, windowWidth, windowWidth);
+            ctx.fillStyle = colorSchemes[colorIndex][0];
+            ctx.fillRect (0, 0, windowWidth, windowWidth);
+            ctx.putImageData(previousImageData, 0, 0);
+            Puzzle.drawSpiro();
+            Puzzle.drawGrid();
+
+            var newImageArray = [];
+            for (var i = 0; i < slices; ++i) {
+                for (var j = 0; j < slices; ++j) {
+                    var imgData=ctx.getImageData(j*len,i*len,len,len);
+                    newImageArray.push(imgData);
+                }
+            }
+            for(var i = 0; i < slices*slices; ++i) {
+                var x = Math.floor(i/slices), y = i - x*slices;
+                imageArray[i] = newImageArray[indexArray[i]];
+                ctx.putImageData(imageArray[i], y*len, x*len);
+            }
+            if (posIndex == 3){
+                clearInterval(drawIntervalId);
+            }
+            posIndex ++;
+        }
         Puzzle.random = function() {
             for (var i = 0; i < slices; ++i) {
                 for (var j = 0; j < slices; ++j) {
@@ -287,12 +286,16 @@
                 }
             }
 
-            for (var k = 0; k < 30; ++k) {
+            for (var k = 0; k < 1; ++k) {
                 var i = generateRandom(0, slices*slices-1);
                 var j = generateRandom(0, slices*slices-1);
                 var x1 = Math.floor(i/slices), y1 = i - x1*slices;
                 var x2 = Math.floor(j/slices), y2 = j - x2*slices;
-                swapImage(imageArray, {'i':x1, 'j':y1}, {'i':x2, 'j':y2});
+                //swapImage(imageArray, {'i':x1, 'j':y1}, {'i':x2, 'j':y2});
+                swap(indexArray, i, j);
+            }
+            for (var i = 0; i < slices*slices; ++i){
+                console.log(indexArray[i]);
             }
         }
         Puzzle.isFinished = function() {
@@ -314,6 +317,7 @@
 })(window);
 
 Puzzle.init();
+Puzzle.random();
 Puzzle.draw();
 Puzzle.drawGrid();
-Puzzle.random();
+
